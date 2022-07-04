@@ -63,6 +63,7 @@ jobs:
           name: backend tests
           command: |
             cd backend
+            npm i
             npm run test
 
 workflows:
