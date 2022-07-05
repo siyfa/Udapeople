@@ -1,6 +1,6 @@
 version: 2.1
 
-orbs: 
+orbs:
   slack: circleci/slack@4.10.1
 
 commands:
@@ -21,9 +21,8 @@ commands:
             aws cloudformation delete-stack --stack-name backend-<<parameters.workflow_id>>
       - revert-migrations:
           workflow_id: <<parameters.workflow_id>>
-          
-jobs:
 
+jobs:
   build-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -87,7 +86,7 @@ jobs:
             cd backend
             npm i
             npm run test
-  
+
   scan-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -102,7 +101,7 @@ jobs:
             npm install
             # npm install oauth-sign@^0.9.0
             npm audit fix --audit-level=critical
-  
+
   scan-backend:
     docker:
       - image: circleci/node:13.8.0
@@ -130,7 +129,7 @@ jobs:
               --template-file .circleci/files/backend.yml \
               --stack-name backend-"${CIRCLE_WORKFLOW_ID}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}" \
-              --tags project=udapeople-backend   
+              --tags project=udapeople-backend
       - run:
           name: Ensure frontend infrastructure exist
           command: |
@@ -154,7 +153,7 @@ jobs:
       # This command has a when: on_fail
       - destroy-environment:
           workflow_id: "${CIRCLE_WORKFLOW_ID}"
-   
+
 workflows:
   default:
     jobs:
@@ -168,3 +167,8 @@ workflows:
           requires: [build-frontend]
       - scan-backend:
           requires: [build-backend]
+      - deploy-infrastructure:
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+            filters:
+              branches:
+                only: [master]
