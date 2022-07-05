@@ -123,28 +123,38 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Ensure backend infrastructure exist
+          name: Ensure back-end infrastructure exists
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
+              --tags project=udapeople-backend \
               --stack-name backend-"${CIRCLE_WORKFLOW_ID}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}" \
-              --tags project=udapeople-backend
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}"
+
+            export BACKEND_URL=$(aws cloudformation describe-stacks \
+              --stack-name backend-"${CIRCLE_WORKFLOW_ID}" \
+              --query "Stacks[0].Outputs[?OutputKey=='BackendURL'].OutputValue" \
+              --no-paginate --output text)
+              
+            echo $BACKEND_URL
+            curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" \
+              --request PUT --data "${BACKEND_URL}" \
+              https://api.memstash.io/values/backendurl
       - run:
-          name: Ensure frontend infrastructure exist
+          name: Ensure front-end infrastructure exist
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
+              --tags project=udapeople-frontend \
               --stack-name frontend-"${CIRCLE_WORKFLOW_ID}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}" \
-              --tags project=udapeople-frontend
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}"
       - run:
-        name: Add Back-end IP to ansible inventory.txt
-        command: |
-          export BACKEND_URL=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" \
-            --request GET https://api.memstash.io/values/backendurl)
-          echo "${BACKEND_URL}" >> .circleci/ansible/inventory.txt
-          cat .circleci/ansible/inventory.txt
+          name: Add back-end ip to ansible inventory
+          command: |
+            export BACKEND_URL=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" \
+              --request GET https://api.memstash.io/values/backendurl)
+            echo "${BACKEND_URL}" >> .circleci/ansible/inventory.txt
+            cat .circleci/ansible/inventory.txt
       - run: yum -y install tar gzip
       - persist_to_workspace:
           root: .circleci/ansible
@@ -153,6 +163,7 @@ jobs:
       # This command has a when: on_fail
       - destroy-environment:
           workflow_id: "${CIRCLE_WORKFLOW_ID}"
+
 
 workflows:
   default:
