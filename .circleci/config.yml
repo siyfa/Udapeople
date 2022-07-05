@@ -1,5 +1,27 @@
 version: 2.1
 
+orbs: 
+  slack: circleci/slack@4.10.1
+
+commands:
+  destroy-environment:
+    description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
+    parameters:
+      workflow_id:
+        type: string
+    steps:
+      - run:
+          name: Destroy environments
+          when: on_fail
+          command: |
+            if aws s3 ls | grep udapeople-<<parameters.workflow_id>>; then
+              aws s3 rm s3://udapeople-<<parameters.workflow_id>> --recursive
+            fi
+            aws cloudformation delete-stack --stack-name frontend-<<parameters.workflow_id>>
+            aws cloudformation delete-stack --stack-name backend-<<parameters.workflow_id>>
+      - revert-migrations:
+          workflow_id: <<parameters.workflow_id>>
+          
 jobs:
 
   build-frontend:
@@ -96,6 +118,43 @@ jobs:
             # npm install oauth-sign@^0.9.0
             npm audit fix --audit-level=critical
 
+  deploy-infrastructure:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Ensure backend infrastructure exist
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/backend.yml \
+              --stack-name backend-"${CIRCLE_WORKFLOW_ID}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}" \
+              --tags project=udapeople-backend   
+      - run:
+          name: Ensure frontend infrastructure exist
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/frontend.yml \
+              --stack-name frontend-"${CIRCLE_WORKFLOW_ID}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}" \
+              --tags project=udapeople-frontend
+      - run:
+        name: Add Back-end IP to ansible inventory.txt
+        command: |
+          export BACKEND_URL=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" \
+            --request GET https://api.memstash.io/values/backendurl)
+          echo "${BACKEND_URL}" >> .circleci/ansible/inventory.txt
+          cat .circleci/ansible/inventory.txt
+      - run: yum -y install tar gzip
+      - persist_to_workspace:
+          root: .circleci/ansible
+          paths:
+            - inventory.txt
+      # This command has a when: on_fail
+      - destroy-environment:
+          workflow_id: "${CIRCLE_WORKFLOW_ID}"
+   
 workflows:
   default:
     jobs:
