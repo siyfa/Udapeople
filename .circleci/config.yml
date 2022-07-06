@@ -154,6 +154,26 @@ jobs:
       - destroy-environment:
           workflow_id: "${CIRCLE_WORKFLOW_ID}"
 
+  configure-infrastructure:
+    docker:
+      - image: python:3.9.1-alpine3.12
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - "24:cc:82:ba:f5:41:0c:f6:ba:3d:d3:e9:f8:c1:b2:aa"
+      - attach_workspace:
+          at: /.circleci/ansible
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update ansible aws-cli
+      - run:
+          name: Configure server
+          command: |
+             cd .circleci/ansible ansible-playbook -i inventory.txt configure-server.yml
+      - destroy-environment:
+          workflow_id: "${CIRCLE_WORKFLOW_ID}"
 
 workflows:
   default:
@@ -170,3 +190,5 @@ workflows:
           requires: [build-backend]
       - deploy-infrastructure:
           requires: [test-frontend,test-backend,scan-frontend,scan-backend]
+      - configure-infrastructure:
+          requires: [deploy-infrastructure]
