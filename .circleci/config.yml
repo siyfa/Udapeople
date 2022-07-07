@@ -12,6 +12,9 @@ commands:
         type: string
     
     steps:
+      - run:  
+          command: |
+            echo parameters
       - run:
           name: Destroy environments
           when: on_fail
@@ -209,7 +212,7 @@ jobs:
                   curl https://kvdb.io/EoDKAyH7GvjZW54CjQsVuV/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
               fi
       - destroy-environment:
-          workflow_id: "${CIRCLE_WORKFLOW_ID}"
+          circle_workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
 
   deploy-frontend:
     docker:
