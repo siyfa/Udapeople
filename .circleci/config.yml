@@ -119,7 +119,7 @@ jobs:
             npm update path-parse --depth 3 
             npm update kind-of --depth 10
             npm install --save-dev webpack@5.73.0
-            npm audit fix --audit-level=critical
+            npm audit fix --audit-level=critical --force
             npm audit --audit-level=critical
 
   deploy-infrastructure:
@@ -147,14 +147,15 @@ jobs:
       - run:
           name: Add back-end ip to ansible inventory
           command: |
-            export BACKEND_URL=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" \
-              --request GET https://api.memstash.io/values/backendurl)
-            echo "${BACKEND_URL}" >> .circleci/ansible/inventory.txt
-            cat .circleci/ansible/inventory.txt
+            aws ec2 describe-instances \
+            --filter "Name=instance-state-name,Values=running" \
+            --query "Reservations[*].Instances[*].[PublicIpAddress]" \
+            --output text >> ~/project/.circleci/ansible/inventory.txt
+            cat ~/project/.circleci/ansible/inventory.txt
       - persist_to_workspace:
-          root: .circleci/ansible
+          root: ~/
           paths:
-            - inventory.txt
+            - project/.circleci/ansible/*
       # This command has a when: on_fail
       - destroy-environment:
           workflow_id: "${CIRCLE_WORKFLOW_ID}"
