@@ -100,8 +100,8 @@ jobs:
           command: |
             cd frontend
             npm install
-            # npm install oauth-sign@^0.9.0
-            npm audit fix --audit-level=critical
+            npm audit fix --audit-level=critical --force
+            npm audit --audit-level=critical
 
   scan-backend:
     docker:
@@ -115,8 +115,8 @@ jobs:
           command: |
             cd backend
             npm install
-            # npm install oauth-sign@^0.9.0
-            npm audit fix --audit-level=critical
+            npm audit fix --audit-level=critical --force
+            npm audit --audit-level=critical
 
   deploy-infrastructure:
     docker:
@@ -273,10 +273,10 @@ workflows:
           requires: [build-frontend]
       - test-backend:
           requires: [build-backend]
-      # - scan-frontend:
-      #     requires: [build-frontend]
-      # - scan-backend:
-      #     requires: [build-backend]
+      - scan-frontend:
+          requires: [build-frontend]
+      - scan-backend:
+          requires: [build-backend]
       # - deploy-infrastructure:
       #     requires: [test-frontend,test-backend,scan-frontend,scan-backend]
       # - configure-infrastructure:
