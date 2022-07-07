@@ -10,19 +10,16 @@ commands:
     parameters:
       circle_workflow_id:
         type: string
-    
+         
     steps:
-      - run:  
-          command: |
-            echo parameters
       - run:
-          name: Destroy environments
+          name: Destroy backend environment
           when: on_fail
           command: |
-            echo "Destroying environment: << parameters.workflow_id >>"
-            aws s3 rm s3://udapeople-<<parameters.workflow_id>> --recursive
-            aws cloudformation delete-stack --stack-name udapeople-backend-<<parameters.workflow_id>>
-            aws cloudformation delete-stack --stack-name udapeople-frontend-<<parameters.workflow_id>>
+            echo "Destroying environment: << parameters.circle_workflow_id >> "
+            aws s3 rm s3://udapeople-<< parameters.circle_workflow_id >> --recursive
+            aws cloudformation delete-stack --stack-name udapeople-backend-<< parameters.circle_workflow_id >>
+            aws cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.circle_workflow_id >>
 
 jobs:
   build-frontend:
@@ -135,16 +132,17 @@ jobs:
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  \
-              --tags project=udapeople
+              --tags project=Udapeople \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
+                                      
       - run:
           name: Ensure front-end infrastructure exist
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
-              --tags project=udapeople \
+              --tags project=Udapeople \
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}"
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
       - run:
           name: Add back-end ip to ansible inventory
           command: |
@@ -162,7 +160,6 @@ jobs:
           paths:
             - project/.circleci/ansible/inventory.txt
             - env_vars.txt
-      # This command has a when: on_fail
       - destroy-environment:
           circle_workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
 
