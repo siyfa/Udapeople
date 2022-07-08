@@ -340,6 +340,48 @@ jobs:
       - destroy-environment:
           circle_workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
      
+  smoke-test:
+    docker:
+      - image: python:3.10-alpine3.16
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update tar gzip curl nodejs npm openssh-client git
+            pip install awscli
+            aws --version
+      - run:
+          name: Get backend url and Backend smoke test.
+          command: |
+            # Fetch and prepare the BACKEND_IP env var
+            export API_URL="http://${BACKEND_IP}:3030"
+            echo "${API_URL}"
+            if curl "${API_URL}/api/status" | grep "ok"
+            then
+                return 0
+            else
+                return 1
+            fi
+      - run:
+          name: Frontend smoke test
+          command: |
+            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-west-2.amazonaws.com/#/employees"            
+            echo ${URL} 
+            if curl -s ${URL} | grep "Welcome"
+            then
+                # Change this to 0 after the job fails
+              return 1
+            else
+              return 1
+            fi
+      - destroy-environment:
+          circle_workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"  
+      - revert-migrations: 
+          circle_workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
+          
 workflows:
   default:
     jobs:
@@ -366,3 +408,5 @@ workflows:
           requires: [run-migrations]
       - deploy-backend:
           requires: [run-migrations]
+      - smoke-test:
+          requires: [deploy-frontend,deploy-backend]
