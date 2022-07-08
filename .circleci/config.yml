@@ -175,7 +175,6 @@ jobs:
             echo "$backend_ec2_public_ip" >> .circleci/ansible/inventory.txt
             cat .circleci/ansible/inventory.txt
       - persist_to_workspace:
-          r
           paths:
             - project/.circleci/ansible/inventory.txt
             - env_vars.txt
