@@ -207,38 +207,58 @@ jobs:
 
   run-migrations:
     docker:
-      - image: python:3.10-alpine3.16
+      - image: circleci/node:13.8.0
     steps:
       - checkout
       - restore_cache:
           keys: [backend-build]
       - run:
+          name: prepare environment for backend build
+          command: |
+            cat \<< EOF > backend/.env
+            ENVIRONMENT=production
+            VERSION=1
+            TYPEORM_CONNECTION=postgres
+            TYPEORM_MIGRATIONS_DIR=./src/migrations
+            TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts
+            TYPEORM_MIGRATIONS=./src/migrations/*.ts
+            TYPEORM_HOST=${TYPEORM_HOST}
+            TYPEORM_PORT=${TYPEORM_PORT}
+            TYPEORM_USERNAME=${TYPEORM_USERNAME}
+            TYPEORM_PASSWORD=${TYPEORM_PASSWORD}
+            TYPEORM_DATABASE=${TYPEORM_DATABASE}
+            EOF
+      - run:
           name: Install dependencies
           command: |
-            apk add --update tar gzip curl nodejs npm openssh-client git
-            pip install awscli
-            aws --version
+            sudo apt update
+            sudo apt install -y awscli
       - run:
           name: Run migrations
           command: |
-            cd backend/src
+            cd backend
+            cat .env
             npm install
-            npm run migrations >> migrations_dump.txt 
-            cat migrations_dump.txt
-      - run:
-          name: Send migration status to kvdb.io
-          command: |   
-              if grep -q "has been executed successfully." ~/project/backend/src/migrations_dump.txt
-              then
-                  # If you are using kvdb.io, generate the bucket ID "EoDKAyH7GvjZW54CjQsVuV" in your local terminal first
-                  curl https://kvdb.io/EoDKAyH7GvjZW54CjQsVuV/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
-              fi
+            npm run build
+            npm run migrations 2>&1 | tee migrations_dump.txt
+            status_code="${PIPESTATUS[0]}"
+            if [[ ! "${status_code}" == 0 ]]; then
+              return 1
+            fi
+            if cat migrations_dump.txt | grep "has been executed successfully"; then          
+              # If you are using kvdb.io, generate the bucket ID "EoDKAyH7GvjZW54CjQsVuV" in your local terminal first
+              curl https://kvdb.io/EoDKAyH7GvjZW54CjQsVuV/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
+            fi
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - backend
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
       - revert-migrations: 
           circle_workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
-
+          
   deploy-frontend:
     docker:
       - image: amazon/aws-cli
