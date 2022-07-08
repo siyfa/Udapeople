@@ -356,6 +356,8 @@ jobs:
       - run:
           name: Get backend url and Backend smoke test.
           command: |
+            export BACKEND_IP=$(cat ~/env_vars.txt)
+            # echo ${BACKEND_IP}
             # Fetch and prepare the BACKEND_IP env var
             export API_URL="http://${BACKEND_IP}:3030"
             echo "${API_URL}"
@@ -381,7 +383,7 @@ jobs:
           circle_workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"  
       - revert-migrations: 
           circle_workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
-          
+
 workflows:
   default:
     jobs:
