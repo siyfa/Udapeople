@@ -249,7 +249,7 @@ jobs:
               curl https://kvdb.io/EoDKAyH7GvjZW54CjQsVuV/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
             fi
       - persist_to_workspace:
-          root: ~/
+          root: ~/project
           paths:
             - backend
       - save_cache:
