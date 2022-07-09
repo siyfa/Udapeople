@@ -368,6 +368,7 @@ jobs:
             else
                 return 1
             fi
+            curl "${API_URL}/api/status"
       - run:
           name: Frontend smoke test.
           command: |
