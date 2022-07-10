@@ -1,4 +1,4 @@
 URL01 - https://github.com/siyfa/udapeople
-URL02 - http://udapeople-cd62fb4.s3-website-us-east-1.amazonaws.com/#/employees
+URL02 - http://udapeople-5660745.s3-website-us-east-1.amazonaws.com/#/employees
 URL03 - d1j992omm1evzk.cloudfront.net
-URL04 - http://3.85.62.185:3030/api/status
+URL04 - http://34.238.241.112:3030/api/status
